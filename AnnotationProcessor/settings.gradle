@@ -1,2 +1,5 @@
 rootProject.name = 'AnnotationProcessor'
+include 'processor'
+include 'Test'
+include 'demo'
 
