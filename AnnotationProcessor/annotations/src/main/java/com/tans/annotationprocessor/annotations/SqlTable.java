@@ -1,4 +1,4 @@
-package com.tans.annotationprocessor;
+package com.tans.annotationprocessor.annotations;
 
 import java.lang.annotation.*;
 

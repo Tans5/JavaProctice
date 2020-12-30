@@ -1,8 +1,8 @@
 package com.tans.annotationprocessor.demo;
 
 
-import com.tans.annotationprocessor.SqlField;
-import com.tans.annotationprocessor.SqlTable;
+import com.tans.annotationprocessor.annotations.SqlField;
+import com.tans.annotationprocessor.annotations.SqlTable;
 
 @SqlTable(name = "person", primaryKey = "first_name")
 public class Person {
