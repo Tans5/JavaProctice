@@ -20,15 +20,55 @@ sourceSets {
     }
 }
 
+void deleteFiles(File file) {
+    if (file.isFile()) {
+        file.delete()
+    }
+    if (file.isDirectory()) {
+        File[] children = file.listFiles()
+        if (children.length <= 0) {
+            file.deleteDir()
+        } else {
+            for (File child: children) {
+                if (child.isFile()) {
+                    child.delete()
+                } else {
+                    deleteFiles(child)
+                }
+            }
+            file.deleteDir()
+        }
+    }
+}
+
 def cleanTask = tasks.find { task ->
     task.name.contains("clean")
 }
 
-tasks.each { task ->
-    if (task.name.startsWith("build") && cleanTask != null) {
-        task.dependsOn(cleanTask)
-    }
+cleanTask.doLast {
+    println("Start Delete File..")
+    File rootDir = project.rootDir
+    File myDir = projectDir
+    deleteFiles(new File(rootDir, "build"))
+    deleteFiles(new File(myDir, "build"))
 }
+
+//def removeBuildDirTask = tasks.create("removeBuildDir") {
+//    println("Start Delete File..")
+//    File rootDir = project.rootDir
+//    File myDir = projectDir
+//    deleteFiles(new File(rootDir, "build"))
+//    deleteFiles(new File(myDir, "build"))
+//}
+//
+//cleanTask.dependsOn(removeBuildDirTask)
+
+//tasks.each { task ->
+//    if (task.name.startsWith("build")) {
+//        task.dependsOn(cleanTask)
+//    }
+//}
+
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
