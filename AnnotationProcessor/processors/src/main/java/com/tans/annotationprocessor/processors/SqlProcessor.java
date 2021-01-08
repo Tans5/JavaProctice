@@ -5,7 +5,9 @@ import com.google.auto.service.AutoService;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -13,9 +15,9 @@ import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
-
-import com.sun.tools.javac.code.Symbol;
 import com.tans.annotationprocessor.annotations.*;
 
 // @SupportedAnnotationTypes({"com.example.processors.SqlTable", "com.example.processors.SqlDao"})
@@ -45,6 +47,7 @@ public class SqlProcessor extends AbstractProcessor {
                 writer.append("Annotations: ").append(annotations.toString()).append("\n");
                 writer.append("RoundEnv SqlDao: ").append(roundEnv.getElementsAnnotatedWith(SqlDao.class).toString()).append("\n");
                 writer.append("RoundEnv Query: ").append(roundEnv.getElementsAnnotatedWith(Query.class).toString()).append("\n");
+
                 writer.append("----------------End--------------").append("\n");
                 writer.flush();
                 writer.close();
@@ -53,8 +56,22 @@ public class SqlProcessor extends AbstractProcessor {
                 return false;
             }
 
-            Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(SqlDao.class);
-            for (Element e: elements) {
+            Set<? extends Element> daoElements = roundEnv.getElementsAnnotatedWith(SqlDao.class);
+            Set<? extends Element> queryElements = roundEnv.getElementsAnnotatedWith(Query.class);
+            for (Element daoE: daoElements) {
+                if (daoE.getKind().equals(ElementKind.INTERFACE)) {
+                    TypeElement daoTE = (TypeElement) daoE;
+                    List<ExecutableElement> queryEEs = new ArrayList<>();
+                    for (Element queryE: queryElements) {
+                        if (queryE.getKind().equals(ElementKind.METHOD)) {
+                            ExecutableElement queryEE = (ExecutableElement) queryE;
+                            if (queryEE.getEnclosingElement() == daoTE) {
+                                queryEEs.add(queryEE);
+                            }
+                        }
+                    }
+                    generateDaoClass(daoTE, queryEEs);
+                }
             }
 
 
@@ -98,8 +115,6 @@ public class SqlProcessor extends AbstractProcessor {
         }
     }
 
-
-
     @Override
     public Set<String> getSupportedAnnotationTypes() {
         Set<String> result = new HashSet<>();
@@ -110,5 +125,30 @@ public class SqlProcessor extends AbstractProcessor {
     @Override
     public SourceVersion getSupportedSourceVersion() {
         return SourceVersion.RELEASE_8;
+    }
+
+    private void generateDaoClass(TypeElement daoTe, List<ExecutableElement> daoMethods) {
+        File genCodeDir = new File("build/generated/sources/tans-processors/java/com/tans/processors/gen/");
+        if (!genCodeDir.exists()) {
+            if (!genCodeDir.mkdirs()) {
+                return;
+            }
+        }
+        String classSimpleName = daoTe.getSimpleName().toString() + "Impl";
+        File genJava = new File(genCodeDir, classSimpleName + ".java");
+        try {
+            FileWriter genJavaWriter = new FileWriter(genJava);
+            genJavaWriter.append("package com.tans.processors.gen; \n");
+            genJavaWriter.append("public class GenTest { \n");
+            genJavaWriter.append("public static String getGenMessage() { \n");
+            genJavaWriter.append("return \"Hello, this is a GenCode..\"; \n");
+            genJavaWriter.append("}\n");
+            genJavaWriter.append("}\n");
+            genJavaWriter.flush();
+            genJavaWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            genJava.delete();
+        }
     }
 }
