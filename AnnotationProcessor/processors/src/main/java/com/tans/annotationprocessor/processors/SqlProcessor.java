@@ -12,7 +12,10 @@ import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+
+import com.sun.tools.javac.code.Symbol;
 import com.tans.annotationprocessor.annotations.*;
 
 // @SupportedAnnotationTypes({"com.example.processors.SqlTable", "com.example.processors.SqlDao"})
@@ -48,6 +51,10 @@ public class SqlProcessor extends AbstractProcessor {
             } catch (IOException e) {
                 e.printStackTrace();
                 return false;
+            }
+
+            Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(SqlDao.class);
+            for (Element e: elements) {
             }
 
 
@@ -90,6 +97,8 @@ public class SqlProcessor extends AbstractProcessor {
             return false;
         }
     }
+
+
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
