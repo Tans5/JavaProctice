@@ -1,8 +1,8 @@
 package com.tans.annotationprocessor.demo;
 
 
-import com.example.processors.Query;
-import com.example.processors.SqlDao;
+import com.tans.annotationprocessor.annotations.Query;
+import com.tans.annotationprocessor.annotations.SqlDao;
 
 @SqlDao
 public class PersonDao {
