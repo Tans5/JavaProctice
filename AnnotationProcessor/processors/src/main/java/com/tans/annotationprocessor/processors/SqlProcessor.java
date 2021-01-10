@@ -14,10 +14,8 @@ import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.*;
+
 import com.tans.annotationprocessor.annotations.*;
 
 // @SupportedAnnotationTypes({"com.example.processors.SqlTable", "com.example.processors.SqlDao"})
@@ -74,41 +72,6 @@ public class SqlProcessor extends AbstractProcessor {
                 }
             }
 
-
-            // Generate Code.
-            File genCodeDir = new File("build/generated/sources/tans-processors/java/com/tans/processors/gen/");
-            if (!genCodeDir.exists()) {
-                if (!genCodeDir.mkdirs()) {
-                    return false;
-                }
-            }
-            File genJava = new File(genCodeDir, "GenTest.java");
-            if (!genJava.exists()) {
-                try {
-                    if (!genJava.createNewFile()) {
-                        return false;
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    return false;
-                }
-            }
-            try {
-                FileWriter genJavaWriter = new FileWriter(genJava);
-                genJavaWriter.append("package com.tans.processors.gen; \n");
-                genJavaWriter.append("public class GenTest { \n");
-                genJavaWriter.append("public static String getGenMessage() { \n");
-                genJavaWriter.append("return \"Hello, this is a GenCode..\"; \n");
-                genJavaWriter.append("}\n");
-                genJavaWriter.append("}\n");
-                genJavaWriter.flush();
-                genJavaWriter.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-                genJava.delete();
-                return false;
-            }
-
             return true;
         } else {
             return false;
@@ -139,10 +102,33 @@ public class SqlProcessor extends AbstractProcessor {
         try {
             FileWriter genJavaWriter = new FileWriter(genJava);
             genJavaWriter.append("package com.tans.processors.gen; \n");
-            genJavaWriter.append("public class GenTest { \n");
-            genJavaWriter.append("public static String getGenMessage() { \n");
-            genJavaWriter.append("return \"Hello, this is a GenCode..\"; \n");
-            genJavaWriter.append("}\n");
+            genJavaWriter.append("public class ").append (classSimpleName).append(" implements ").append(daoTe.getQualifiedName().toString()).append(" { \n");
+            for (ExecutableElement ee : daoMethods) {
+                Query query = ee.getAnnotation(Query.class);
+                String queryValue = query.value();
+                String methodName = ee.getSimpleName().toString();
+                List<? extends VariableElement> params = ee.getParameters();
+                String returnType = ee.getReturnType().toString();
+                genJavaWriter.append("@Override").append("\n");
+                genJavaWriter.append("public ").append(returnType).append(" ").append(methodName).append("(");
+                for (int i = 0; i < params.size(); i ++) {
+                    VariableElement param = params.get(i);
+                    String paramName = param.getSimpleName().toString();
+                    String type = param.asType().toString();
+                    genJavaWriter.append(type).append(" ").append(paramName).append(i >= params.size() - 1 ? "" : ",");
+                }
+                genJavaWriter.append(") { \n");
+                genJavaWriter.append("System.out.println(\"").append(queryValue).append("\");").append("\n");
+                genJavaWriter.append("try {").append("\n");
+                genJavaWriter.append("Class clazz = ClassLoader.getSystemClassLoader().loadClass(\"").append(returnType).append("\");").append("\n");
+                genJavaWriter.append("Object result = clazz.newInstance();").append("\n");
+                genJavaWriter.append("return (").append(returnType).append(") result;").append("\n");
+                genJavaWriter.append("} catch (Exception e) {").append("\n");
+                genJavaWriter.append("e.printStackTrace();").append("\n");
+                genJavaWriter.append("return null;").append("\n");
+                genJavaWriter.append("}").append("\n");
+                genJavaWriter.append("}\n");
+            }
             genJavaWriter.append("}\n");
             genJavaWriter.flush();
             genJavaWriter.close();
