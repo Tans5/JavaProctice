@@ -5,16 +5,19 @@ import com.google.auto.service.AutoService;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
+import javax.lang.model.util.Elements;
 
 import com.tans.annotationprocessor.annotations.*;
 
@@ -22,6 +25,16 @@ import com.tans.annotationprocessor.annotations.*;
 //@SupportedSourceVersion(SourceVersion.RELEASE_8)
 @AutoService(Processor.class)
 public class SqlProcessor extends AbstractProcessor {
+
+    private Elements utils;
+    private ProcessingEnvironment processingEnv;
+
+    @Override
+    public synchronized void init(ProcessingEnvironment processingEnv) {
+        super.init(processingEnv);
+        utils = processingEnv.getElementUtils();
+        this.processingEnv = processingEnv;
+    }
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -91,16 +104,9 @@ public class SqlProcessor extends AbstractProcessor {
     }
 
     private void generateDaoClass(TypeElement daoTe, List<ExecutableElement> daoMethods) {
-        File genCodeDir = new File("build/generated/sources/tans-processors/java/com/tans/processors/gen/");
-        if (!genCodeDir.exists()) {
-            if (!genCodeDir.mkdirs()) {
-                return;
-            }
-        }
         String classSimpleName = daoTe.getSimpleName().toString() + "Impl";
-        File genJava = new File(genCodeDir, classSimpleName + ".java");
         try {
-            FileWriter genJavaWriter = new FileWriter(genJava);
+            Writer genJavaWriter = processingEnv.getFiler().createSourceFile("com.tans.processor.gen." + classSimpleName).openWriter();
             genJavaWriter.append("package com.tans.processors.gen; \n");
             genJavaWriter.append("public class ").append (classSimpleName).append(" implements ").append(daoTe.getQualifiedName().toString()).append(" { \n");
             for (ExecutableElement ee : daoMethods) {
@@ -134,7 +140,6 @@ public class SqlProcessor extends AbstractProcessor {
             genJavaWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
-            genJava.delete();
         }
     }
 }
